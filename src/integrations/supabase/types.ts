@@ -14,7 +14,77 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      inventories: {
+        Row: {
+          completed_at: string | null
+          counted_by: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          name: string
+          status: Database["public"]["Enums"]["inventory_status"]
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          counted_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name: string
+          status?: Database["public"]["Enums"]["inventory_status"]
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          counted_by?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          name?: string
+          status?: Database["public"]["Enums"]["inventory_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      inventory_items: {
+        Row: {
+          category: string | null
+          counted_qty: number | null
+          created_at: string
+          id: string
+          inventory_id: string
+          product_name: string
+          system_qty: number
+        }
+        Insert: {
+          category?: string | null
+          counted_qty?: number | null
+          created_at?: string
+          id?: string
+          inventory_id: string
+          product_name: string
+          system_qty?: number
+        }
+        Update: {
+          category?: string | null
+          counted_qty?: number | null
+          created_at?: string
+          id?: string
+          inventory_id?: string
+          product_name?: string
+          system_qty?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_items_inventory_id_fkey"
+            columns: ["inventory_id"]
+            isOneToOne: false
+            referencedRelation: "inventories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +93,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      inventory_status: "en_cours" | "complet"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +220,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      inventory_status: ["en_cours", "complet"],
+    },
   },
 } as const
