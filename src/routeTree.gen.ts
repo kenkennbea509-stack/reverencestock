@@ -9,38 +9,84 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ImportRouteImport } from './routes/import'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InventaireIdRapportRouteImport } from './routes/inventaire.$id.rapport'
+import { Route as InventaireIdCompterRouteImport } from './routes/inventaire.$id.compter'
 
+const ImportRoute = ImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InventaireIdRapportRoute = InventaireIdRapportRouteImport.update({
+  id: '/inventaire/$id/rapport',
+  path: '/inventaire/$id/rapport',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InventaireIdCompterRoute = InventaireIdCompterRouteImport.update({
+  id: '/inventaire/$id/compter',
+  path: '/inventaire/$id/compter',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/import': typeof ImportRoute
+  '/inventaire/$id/compter': typeof InventaireIdCompterRoute
+  '/inventaire/$id/rapport': typeof InventaireIdRapportRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/import': typeof ImportRoute
+  '/inventaire/$id/compter': typeof InventaireIdCompterRoute
+  '/inventaire/$id/rapport': typeof InventaireIdRapportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/import': typeof ImportRoute
+  '/inventaire/$id/compter': typeof InventaireIdCompterRoute
+  '/inventaire/$id/rapport': typeof InventaireIdRapportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/import'
+    | '/inventaire/$id/compter'
+    | '/inventaire/$id/rapport'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to: '/' | '/import' | '/inventaire/$id/compter' | '/inventaire/$id/rapport'
+  id:
+    | '__root__'
+    | '/'
+    | '/import'
+    | '/inventaire/$id/compter'
+    | '/inventaire/$id/rapport'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ImportRoute: typeof ImportRoute
+  InventaireIdCompterRoute: typeof InventaireIdCompterRoute
+  InventaireIdRapportRoute: typeof InventaireIdRapportRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/import': {
+      id: '/import'
+      path: '/import'
+      fullPath: '/import'
+      preLoaderRoute: typeof ImportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +94,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/inventaire/$id/rapport': {
+      id: '/inventaire/$id/rapport'
+      path: '/inventaire/$id/rapport'
+      fullPath: '/inventaire/$id/rapport'
+      preLoaderRoute: typeof InventaireIdRapportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inventaire/$id/compter': {
+      id: '/inventaire/$id/compter'
+      path: '/inventaire/$id/compter'
+      fullPath: '/inventaire/$id/compter'
+      preLoaderRoute: typeof InventaireIdCompterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ImportRoute: ImportRoute,
+  InventaireIdCompterRoute: InventaireIdCompterRoute,
+  InventaireIdRapportRoute: InventaireIdRapportRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
