@@ -4,7 +4,19 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { ClipboardList, Plus, FileText } from "lucide-react";
+import { ClipboardList, Plus, FileText, Trash2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   component: Home,
@@ -82,14 +94,13 @@ function Home() {
                   ? { to: "/inventaire/$id/rapport", params: { id: inv.id } }
                   : { to: "/inventaire/$id/compter", params: { id: inv.id } };
               return (
-                <Link
-                  key={inv.id}
-                  to={target.to}
-                  params={target.params}
-                  className="block"
-                >
-                  <Card className="transition hover:border-primary/50">
-                    <CardContent className="flex items-center justify-between gap-4 py-4">
+                <Card key={inv.id} className="transition hover:border-primary/50">
+                  <CardContent className="flex items-center justify-between gap-2 py-4">
+                    <Link
+                      to={target.to}
+                      params={target.params}
+                      className="flex min-w-0 flex-1 items-center justify-between gap-4"
+                    >
                       <div className="min-w-0">
                         <p className="truncate font-medium">{inv.name}</p>
                         <p className="mt-0.5 text-xs text-muted-foreground">
@@ -104,9 +115,46 @@ function Home() {
                       >
                         {inv.status === "complet" ? "Complet" : "En cours"}
                       </Badge>
-                    </CardContent>
-                  </Card>
-                </Link>
+                    </Link>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-muted-foreground hover:text-destructive"
+                          aria-label="Supprimer"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Supprimer cet inventaire ?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Cette action est irréversible. L'inventaire « {inv.name} » et tous ses produits comptés seront supprimés définitivement.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={async () => {
+                              await supabase.from("inventory_items").delete().eq("inventory_id", inv.id);
+                              const { error } = await supabase.from("inventories").delete().eq("id", inv.id);
+                              if (error) {
+                                toast.error("Erreur lors de la suppression");
+                                return;
+                              }
+                              toast.success("Inventaire supprimé");
+                              setInventories((prev) => prev.filter((i) => i.id !== inv.id));
+                            }}
+                          >
+                            Supprimer
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>
