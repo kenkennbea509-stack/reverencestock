@@ -11,6 +11,7 @@ import {
 import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
+import { InstallPrompt } from "@/components/InstallPrompt";
 
 function NotFoundComponent() {
   return (
@@ -78,7 +79,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "Application d'inventaire pour bar, restaurant" },
       { name: "theme-color", content: "#0b1220" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "Inventaire" },
+      { name: "application-name", content: "Inventaire" },
+      { name: "format-detection", content: "telephone=no" },
       { property: "og:title", content: "Inventaire — Contrôle de stock" },
       { name: "twitter:title", content: "Inventaire — Contrôle de stock" },
       { property: "og:description", content: "Application d'inventaire pour bar, restaurant" },
@@ -91,7 +96,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "manifest", href: "/manifest.webmanifest" },
-      { rel: "apple-touch-icon", href: "/icon-512.png" },
+      { rel: "icon", type: "image/png", sizes: "192x192", href: "/icon-192.png" },
+      { rel: "icon", type: "image/png", sizes: "512x512", href: "/icon-512.png" },
+      { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
     ],
   }),
   shellComponent: RootShell,
@@ -120,6 +127,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <InstallPrompt />
       <Toaster richColors position="top-center" />
     </QueryClientProvider>
   );
