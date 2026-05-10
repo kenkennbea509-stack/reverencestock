@@ -1,82 +1,92 @@
-# Plan — Rôles Admin / Opérateur
+# Plan — App d'inventaire PWA (FR)
 
-## 1. Authentification (username + PIN)
+## Objectif
+Application web installable (PWA) en français pour faire le contrôle manuel d'inventaire bar/resto/piscine : importer un CSV, compter, comparer, générer un rapport.
 
-- Connexion via **nom d'utilisateur + code PIN à 6 chiffres**.
-- Implémentation : on s'appuie sur l'auth intégrée de Lovable Cloud en utilisant un email synthétique `username@reverence.local` et le PIN comme mot de passe (min 6 caractères, accepté par Supabase). L'utilisateur ne voit que « Nom d'utilisateur » et « PIN ».
-- Auto-confirm activé pour les comptes (pas d'email de vérification).
-- Page `/login` unique, pas de page d'inscription publique.
+## Stack & infrastructure
+- TanStack Start (déjà en place) + Tailwind + shadcn/ui
+- **Lovable Cloud activé** (base partagée pour qu'un utilisateur soumette le fichier et qu'un autre continue le comptage)
+- Pas d'authentification — accès libre, on saisit un nom d'opérateur par inventaire
+- Manifest PWA simple (icône générée) pour installation iOS/Android/Desktop — pas de service worker complexe (évite les problèmes en preview)
 
-## 2. Modèle de données
+## Modèle de données (Lovable Cloud)
+Table `inventories` :
+- `id`, `created_at`, `updated_at`
+- `name` (ex: "Inventaire 12 mai")
+- `created_by` (texte libre, opérateur qui importe)
+- `counted_by` (texte libre, opérateur qui compte)
+- `status` : `en_cours` | `complet`
+- `completed_at`
 
-Nouvelles tables :
+Table `inventory_items` :
+- `id`, `inventory_id` (FK)
+- `product_name`
+- `category`
+- `system_qty` (numeric — depuis colonne « In stock »)
+- `counted_qty` (numeric, nullable tant que non compté)
 
-- **`profiles`** : `id` (= `auth.users.id`), `username` (unique), `display_name`, `created_at`.
-- **`user_roles`** : `id`, `user_id`, `role` (`admin` | `operateur`) — table séparée + enum, conformément aux bonnes pratiques (évite l'escalade de privilèges).
-- Fonction SECURITY DEFINER `has_role(_user_id, _role)` pour RLS.
+RLS : politiques permissives (pas d'auth) — lecture/écriture publique sur ces deux tables.
 
-Trigger : à la création d'un `auth.users`, créer automatiquement la ligne `profiles`. Le rôle par défaut est `operateur`. Si l'email correspond à l'**email admin prédéfini** (stocké comme secret `ADMIN_EMAIL`), le rôle `admin` est attribué.
+## Parsing CSV
+- Librairie : `papaparse`
+- Détection automatique de la colonne contenant « In stock » (insensible à la casse, peut varier)
+- Colonne catégorie : `category`
+- **Filtre catégories acceptées** : `Boissons alcooliques`, `Boissons gazeuses`, `Lait`, `Fruit` (comparaison insensible casse/accents)
+- Colonne nom : `Name`
 
-Tables existantes :
+## Routes / écrans
 
-- `inventories` : ajout de `owner_id` (uuid, FK profiles) et `counted_by_id` (uuid, FK profiles, nullable). On garde aussi `created_by`/`counted_by` (texte) pour l'affichage.
-- **Suppression de tous les inventaires existants** (choix utilisateur).
+1. **`/` — Accueil**
+   - Liste des inventaires (en cours + complets) avec statut, date, opérateurs
+   - Bouton « Nouvel inventaire » → `/import`
+   - Clic sur un inventaire en cours → `/inventaire/$id/compter`
+   - Clic sur un inventaire complet → `/inventaire/$id/rapport`
 
-## 3. Politiques RLS (mises à jour)
+2. **`/import` — Création**
+   - Champ « Nom de l'opérateur »
+   - Champ « Nom de l'inventaire » (préfilled avec date)
+   - Upload CSV → preview du nombre de produits filtrés
+   - Bouton « Créer l'inventaire » → enregistre en base avec `status=en_cours`, redirige vers `/inventaire/$id/compter`
 
-- `inventories` & `inventory_items` :
-  - **SELECT** : admin = tout ; opérateur = uniquement les inventaires `en_cours` (pour pouvoir compter).
-  - **INSERT** : admin uniquement (créer un inventaire = importer le CSV).
-  - **UPDATE** : admin = tout ; opérateur = uniquement champs liés au comptage (`counted_qty`, `counted_by`, `counted_by_id`) sur inventaires `en_cours`.
-  - **DELETE** : admin uniquement.
-- `profiles` : lecture par tous les connectés ; modification par l'admin uniquement.
-- `user_roles` : lecture/écriture admin uniquement (via `has_role`).
+3. **`/inventaire/$id/compter` — Comptage**
+   - Champ « Nom de l'opérateur de comptage » (en haut)
+   - Liste mobile-friendly de toutes les lignes :
+     - Nom produit (gros texte)
+     - Input numérique « Quantité comptée » (clavier numérique sur mobile)
+     - Badge visuel temps réel (Conforme/Manquant/Surplus) une fois saisi
+   - Barre de progression (X/Y comptés)
+   - Sauvegarde auto à chaque saisie (debounced) — permet la reprise par une autre personne
+   - Bouton « Enregistrer et terminer » (actif uniquement si toutes les quantités saisies) → marque `status=complet`, redirige vers rapport
 
-## 4. Écrans / routes
+4. **`/inventaire/$id/rapport` — Rapport final**
+   - **Résumé** (cards) : Total produits, Conformes, Manquants, Surplus, Total écart (somme |diff|)
+   - **Tableau détaillé** (style sombre comme l'annexe) :
+     | Produit | Système | Compté | Différence | Statut |
+   - Filtres rapides : Tous / Manquants / Surplus / Conformes
+   - Bouton « Exporter CSV » du rapport
 
-### Public
-- **`/login`** — connexion username + PIN.
+## Règles de calcul
+- `diff = counted - system`
+- `diff == 0` → **Conforme**
+- `diff < 0` → **Manquant** (affiché `-N`)
+- `diff > 0` → **Surplus** (affiché `+N`)
+- « Valeur totale des écarts » = somme des `|diff|` (en unités, pas en monétaire — pas de prix demandé)
 
-### Opérateur (rôle `operateur`)
-- **`/`** — liste **uniquement des inventaires `en_cours`** assignés ou disponibles.
-- **`/inventaire/$id/compter`** — comptage (accès si statut `en_cours`).
-  - **La colonne « Système » est masquée.** L'opérateur ne voit que le nom du produit et son champ « quantité comptée ».
-  - Bouton « Terminer » disponible quand tout est compté.
-- Pas d'accès à `/import`, `/rapport`, ni à la suppression.
+## PWA
+- `public/manifest.webmanifest` avec `display: standalone`, nom « Inventaire »
+- Icônes 192×192 et 512×512 générées (image simple)
+- Lien manifest + meta theme-color dans `__root.tsx`
+- **Pas de service worker** (recommandation Lovable pour éviter conflits preview)
 
-### Admin (rôle `admin`)
-- **`/`** — vue complète (inventaires en cours + complets, suppression, etc., comme aujourd'hui).
-- **`/import`** — création d'inventaire.
-- **`/inventaire/$id/rapport`** — rapport complet avec quantités système, écarts, export CSV.
-- **`/admin/operateurs`** — nouvelle page :
-  - Liste des opérateurs (username, nom, date création).
-  - Bouton « Ajouter un opérateur » → formulaire (username, nom, PIN initial). L'admin transmet le PIN à l'opérateur.
-  - Action « Réinitialiser PIN », « Supprimer ».
-- Header : badge rôle + bouton « Déconnexion ».
+## Détails techniques
+- Server functions (`createServerFn`) pour : create inventory, list inventories, get inventory, update item count, complete inventory
+- Client Supabase admin côté serveur (pas d'auth utilisateur)
+- Toasts (`sonner`) pour feedback (sauvegarde, erreurs CSV)
+- Design : thème sombre par défaut (cohérent avec l'annexe), tokens sémantiques dans `styles.css`
 
-### Garde de routes
-- `/_authenticated` : redirige vers `/login` si non connecté.
-- `/_authenticated/_admin` : layout supplémentaire qui vérifie le rôle admin via `has_role`, sinon redirige vers `/`.
-
-## 5. Détails techniques
-
-- Server functions (`createServerFn`) avec `requireSupabaseAuth` pour :
-  - `createOperator` (admin only) → crée `auth.users` + profile + role via `supabaseAdmin`.
-  - `resetOperatorPin`, `deleteOperator` (admin only).
-  - `getMyRole` côté client pour adapter l'UI.
-- Hook `useAuth()` qui expose `user`, `role`, `signIn(username, pin)`, `signOut()`.
-- Sur `/inventaire/$id/compter`, on retire visuellement « Système : N » et le badge de statut quand le rôle est `operateur`. Le `system_qty` n'est même pas envoyé : la query SELECT côté opérateur n'inclura que `id, product_name, counted_qty`.
-- Secret à configurer : **`ADMIN_EMAIL`** (l'email du premier admin, ex. `admin@reverence.local`). Lors du premier login, on demandera à l'admin de définir son PIN via un script de bootstrap ou via le secret `ADMIN_INITIAL_PIN`. (À confirmer par toi : on peut aussi te créer le compte admin directement avec un PIN fixe que tu changeras après.)
-
-## 6. Migrations & nettoyage
-
-1. Migration SQL : enum `app_role`, tables `profiles` + `user_roles`, fonction `has_role`, trigger d'auto-création de profile + rôle, ajout colonnes à `inventories`, nouvelles policies RLS.
-2. Suppression des inventaires existants (`DELETE FROM inventory_items; DELETE FROM inventories;`).
-3. Création du compte admin initial (via insert tool une fois le secret `ADMIN_EMAIL` fourni).
-4. Mise à jour des composants : `index.tsx`, `import.tsx`, `inventaire.$id.compter.tsx`, `inventaire.$id.rapport.tsx`, `__root.tsx`, nouveau `/login`, nouveau `/admin/operateurs`.
-
-## 7. Questions résiduelles
-
-Avant d'implémenter, j'aurai besoin de :
-- L'**email admin** à utiliser (ex. `admin@reverence.local`).
-- Un **PIN initial** pour ce compte admin (6 chiffres).
+## Livraison
+À la fin, l'utilisateur peut :
+1. Importer un CSV depuis n'importe quel appareil
+2. Reprendre un inventaire en cours depuis un autre appareil
+3. Voir le rapport final avec tableau identique à l'annexe
+4. Installer l'app sur son téléphone/tablette

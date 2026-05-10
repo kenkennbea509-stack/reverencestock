@@ -9,247 +9,114 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as SetupRouteImport } from './routes/setup'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
-import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/_admin'
-import { Route as AuthenticatedAdminOperateursRouteImport } from './routes/_authenticated/_admin/operateurs'
-import { Route as AuthenticatedAdminImportRouteImport } from './routes/_authenticated/_admin/import'
-import { Route as AuthenticatedInventaireIdCompterRouteImport } from './routes/_authenticated/inventaire.$id.compter'
-import { Route as AuthenticatedAdminInventaireIdRapportRouteImport } from './routes/_authenticated/_admin/inventaire.$id.rapport'
+import { Route as ImportRouteImport } from './routes/import'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as InventaireIdRapportRouteImport } from './routes/inventaire.$id.rapport'
+import { Route as InventaireIdCompterRouteImport } from './routes/inventaire.$id.compter'
 
-const SetupRoute = SetupRouteImport.update({
-  id: '/setup',
-  path: '/setup',
+const ImportRoute = ImportRouteImport.update({
+  id: '/import',
+  path: '/import',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedRoute = AuthenticatedRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
+const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => AuthenticatedRoute,
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/_admin',
-  getParentRoute: () => AuthenticatedRoute,
+const InventaireIdRapportRoute = InventaireIdRapportRouteImport.update({
+  id: '/inventaire/$id/rapport',
+  path: '/inventaire/$id/rapport',
+  getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAdminOperateursRoute =
-  AuthenticatedAdminOperateursRouteImport.update({
-    id: '/operateurs',
-    path: '/operateurs',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminImportRoute =
-  AuthenticatedAdminImportRouteImport.update({
-    id: '/import',
-    path: '/import',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedInventaireIdCompterRoute =
-  AuthenticatedInventaireIdCompterRouteImport.update({
-    id: '/inventaire/$id/compter',
-    path: '/inventaire/$id/compter',
-    getParentRoute: () => AuthenticatedRoute,
-  } as any)
-const AuthenticatedAdminInventaireIdRapportRoute =
-  AuthenticatedAdminInventaireIdRapportRouteImport.update({
-    id: '/inventaire/$id/rapport',
-    path: '/inventaire/$id/rapport',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
+const InventaireIdCompterRoute = InventaireIdCompterRouteImport.update({
+  id: '/inventaire/$id/compter',
+  path: '/inventaire/$id/compter',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof AuthenticatedIndexRoute
-  '/login': typeof LoginRoute
-  '/setup': typeof SetupRoute
-  '/import': typeof AuthenticatedAdminImportRoute
-  '/operateurs': typeof AuthenticatedAdminOperateursRoute
-  '/inventaire/$id/compter': typeof AuthenticatedInventaireIdCompterRoute
-  '/inventaire/$id/rapport': typeof AuthenticatedAdminInventaireIdRapportRoute
+  '/': typeof IndexRoute
+  '/import': typeof ImportRoute
+  '/inventaire/$id/compter': typeof InventaireIdCompterRoute
+  '/inventaire/$id/rapport': typeof InventaireIdRapportRoute
 }
 export interface FileRoutesByTo {
-  '/login': typeof LoginRoute
-  '/setup': typeof SetupRoute
-  '/': typeof AuthenticatedIndexRoute
-  '/import': typeof AuthenticatedAdminImportRoute
-  '/operateurs': typeof AuthenticatedAdminOperateursRoute
-  '/inventaire/$id/compter': typeof AuthenticatedInventaireIdCompterRoute
-  '/inventaire/$id/rapport': typeof AuthenticatedAdminInventaireIdRapportRoute
+  '/': typeof IndexRoute
+  '/import': typeof ImportRoute
+  '/inventaire/$id/compter': typeof InventaireIdCompterRoute
+  '/inventaire/$id/rapport': typeof InventaireIdRapportRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/_authenticated': typeof AuthenticatedRouteWithChildren
-  '/login': typeof LoginRoute
-  '/setup': typeof SetupRoute
-  '/_authenticated/_admin': typeof AuthenticatedAdminRouteWithChildren
-  '/_authenticated/': typeof AuthenticatedIndexRoute
-  '/_authenticated/_admin/import': typeof AuthenticatedAdminImportRoute
-  '/_authenticated/_admin/operateurs': typeof AuthenticatedAdminOperateursRoute
-  '/_authenticated/inventaire/$id/compter': typeof AuthenticatedInventaireIdCompterRoute
-  '/_authenticated/_admin/inventaire/$id/rapport': typeof AuthenticatedAdminInventaireIdRapportRoute
+  '/': typeof IndexRoute
+  '/import': typeof ImportRoute
+  '/inventaire/$id/compter': typeof InventaireIdCompterRoute
+  '/inventaire/$id/rapport': typeof InventaireIdRapportRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/login'
-    | '/setup'
     | '/import'
-    | '/operateurs'
     | '/inventaire/$id/compter'
     | '/inventaire/$id/rapport'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/login'
-    | '/setup'
-    | '/'
-    | '/import'
-    | '/operateurs'
-    | '/inventaire/$id/compter'
-    | '/inventaire/$id/rapport'
+  to: '/' | '/import' | '/inventaire/$id/compter' | '/inventaire/$id/rapport'
   id:
     | '__root__'
-    | '/_authenticated'
-    | '/login'
-    | '/setup'
-    | '/_authenticated/_admin'
-    | '/_authenticated/'
-    | '/_authenticated/_admin/import'
-    | '/_authenticated/_admin/operateurs'
-    | '/_authenticated/inventaire/$id/compter'
-    | '/_authenticated/_admin/inventaire/$id/rapport'
+    | '/'
+    | '/import'
+    | '/inventaire/$id/compter'
+    | '/inventaire/$id/rapport'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
-  LoginRoute: typeof LoginRoute
-  SetupRoute: typeof SetupRoute
+  IndexRoute: typeof IndexRoute
+  ImportRoute: typeof ImportRoute
+  InventaireIdCompterRoute: typeof InventaireIdCompterRoute
+  InventaireIdRapportRoute: typeof InventaireIdRapportRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/setup': {
-      id: '/setup'
-      path: '/setup'
-      fullPath: '/setup'
-      preLoaderRoute: typeof SetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/': {
-      id: '/_authenticated/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/_admin': {
-      id: '/_authenticated/_admin'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
-      parentRoute: typeof AuthenticatedRoute
-    }
-    '/_authenticated/_admin/operateurs': {
-      id: '/_authenticated/_admin/operateurs'
-      path: '/operateurs'
-      fullPath: '/operateurs'
-      preLoaderRoute: typeof AuthenticatedAdminOperateursRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/_admin/import': {
-      id: '/_authenticated/_admin/import'
+    '/import': {
+      id: '/import'
       path: '/import'
       fullPath: '/import'
-      preLoaderRoute: typeof AuthenticatedAdminImportRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      preLoaderRoute: typeof ImportRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/inventaire/$id/compter': {
-      id: '/_authenticated/inventaire/$id/compter'
-      path: '/inventaire/$id/compter'
-      fullPath: '/inventaire/$id/compter'
-      preLoaderRoute: typeof AuthenticatedInventaireIdCompterRouteImport
-      parentRoute: typeof AuthenticatedRoute
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/_admin/inventaire/$id/rapport': {
-      id: '/_authenticated/_admin/inventaire/$id/rapport'
+    '/inventaire/$id/rapport': {
+      id: '/inventaire/$id/rapport'
       path: '/inventaire/$id/rapport'
       fullPath: '/inventaire/$id/rapport'
-      preLoaderRoute: typeof AuthenticatedAdminInventaireIdRapportRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+      preLoaderRoute: typeof InventaireIdRapportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inventaire/$id/compter': {
+      id: '/inventaire/$id/compter'
+      path: '/inventaire/$id/compter'
+      fullPath: '/inventaire/$id/compter'
+      preLoaderRoute: typeof InventaireIdCompterRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
 
-interface AuthenticatedAdminRouteChildren {
-  AuthenticatedAdminImportRoute: typeof AuthenticatedAdminImportRoute
-  AuthenticatedAdminOperateursRoute: typeof AuthenticatedAdminOperateursRoute
-  AuthenticatedAdminInventaireIdRapportRoute: typeof AuthenticatedAdminInventaireIdRapportRoute
-}
-
-const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
-  AuthenticatedAdminImportRoute: AuthenticatedAdminImportRoute,
-  AuthenticatedAdminOperateursRoute: AuthenticatedAdminOperateursRoute,
-  AuthenticatedAdminInventaireIdRapportRoute:
-    AuthenticatedAdminInventaireIdRapportRoute,
-}
-
-const AuthenticatedAdminRouteWithChildren =
-  AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
-
-interface AuthenticatedRouteChildren {
-  AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
-  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
-  AuthenticatedInventaireIdCompterRoute: typeof AuthenticatedInventaireIdCompterRoute
-}
-
-const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
-  AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
-  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
-  AuthenticatedInventaireIdCompterRoute: AuthenticatedInventaireIdCompterRoute,
-}
-
-const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
-  AuthenticatedRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
-  AuthenticatedRoute: AuthenticatedRouteWithChildren,
-  LoginRoute: LoginRoute,
-  SetupRoute: SetupRoute,
+  IndexRoute: IndexRoute,
+  ImportRoute: ImportRoute,
+  InventaireIdCompterRoute: InventaireIdCompterRoute,
+  InventaireIdRapportRoute: InventaireIdRapportRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

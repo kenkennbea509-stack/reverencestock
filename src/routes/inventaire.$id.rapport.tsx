@@ -13,9 +13,14 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ArrowLeft, Download } from "lucide-react";
-import { computeStatus, formatDiff, statusLabel, type ItemStatus } from "@/lib/inventory-utils";
+import {
+  computeStatus,
+  formatDiff,
+  statusLabel,
+  type ItemStatus,
+} from "@/lib/inventory-utils";
 
-export const Route = createFileRoute("/_authenticated/_admin/inventaire/$id/rapport")({
+export const Route = createFileRoute("/inventaire/$id/rapport")({
   component: RapportPage,
 });
 
@@ -75,7 +80,8 @@ function RapportPage() {
       if (s === "conforme") conforme++;
       else if (s === "manquant") manquant++;
       else if (s === "surplus") surplus++;
-      if (i.counted_qty !== null) ecart += Math.abs((i.counted_qty ?? 0) - i.system_qty);
+      if (i.counted_qty !== null)
+        ecart += Math.abs((i.counted_qty ?? 0) - i.system_qty);
     }
     return { total: items.length, conforme, manquant, surplus, ecart };
   }, [items]);
@@ -100,7 +106,11 @@ function RapportPage() {
       }),
     ];
     const csv = rows
-      .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+      .map((r) =>
+        r
+          .map((c) => `"${String(c).replace(/"/g, '""')}"`)
+          .join(","),
+      )
       .join("\n");
     const blob = new Blob([`\ufeff${csv}`], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -163,6 +173,11 @@ function RapportPage() {
 
             <Card className="overflow-hidden">
               <CardContent className="p-0">
+                <div className="p-4 pb-2">
+                  <p className="text-sm text-muted-foreground">
+                    Afficher un tableau :
+                  </p>
+                </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -178,7 +193,9 @@ function RapportPage() {
                       const s = computeStatus(i.system_qty, i.counted_qty);
                       return (
                         <TableRow key={i.id}>
-                          <TableCell className="font-medium">{i.product_name}</TableCell>
+                          <TableCell className="font-medium">
+                            {i.product_name}
+                          </TableCell>
                           <TableCell>{i.system_qty}</TableCell>
                           <TableCell>{i.counted_qty ?? "—"}</TableCell>
                           <TableCell
@@ -249,7 +266,9 @@ function StatCard({
   return (
     <Card>
       <CardContent className="py-4">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          {label}
+        </p>
         <p className={`mt-1 text-2xl font-semibold ${color}`}>{value}</p>
       </CardContent>
     </Card>

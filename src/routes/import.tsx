@@ -1,7 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth-context";
 import { parseInventoryCsv, type ParsedProduct } from "@/lib/csv-parser";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,15 +9,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { ArrowLeft, Upload } from "lucide-react";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/_authenticated/_admin/import")({
+export const Route = createFileRoute("/import")({
   component: ImportPage,
 });
 
 function ImportPage() {
   const navigate = useNavigate();
-  const { profile } = useAuth();
   const today = new Date().toLocaleDateString("fr-FR");
   const [name, setName] = useState(`Inventaire ${today}`);
+  const [operator, setOperator] = useState("");
   const [products, setProducts] = useState<ParsedProduct[]>([]);
   const [fileName, setFileName] = useState<string | null>(null);
   const [parsing, setParsing] = useState(false);
@@ -49,19 +48,18 @@ function ImportPage() {
   };
 
   const handleCreate = async () => {
+    if (!operator.trim()) {
+      toast.error("Veuillez saisir le nom de l'opérateur.");
+      return;
+    }
     if (products.length === 0) {
       toast.error("Veuillez importer un fichier CSV avec des produits.");
       return;
     }
     setCreating(true);
-    const operatorName = profile?.display_name ?? profile?.username ?? "admin";
     const { data: inv, error } = await supabase
       .from("inventories")
-      .insert({
-        name: name.trim() || `Inventaire ${today}`,
-        created_by: operatorName,
-        owner_id: profile?.id ?? null,
-      })
+      .insert({ name: name.trim() || `Inventaire ${today}`, created_by: operator.trim() })
       .select("id")
       .single();
     if (error || !inv) {
@@ -83,7 +81,7 @@ function ImportPage() {
       return;
     }
     toast.success("Inventaire créé !");
-    navigate({ to: "/" });
+    navigate({ to: "/inventaire/$id/compter", params: { id: inv.id } });
   };
 
   return (
@@ -103,8 +101,21 @@ function ImportPage() {
         <Card>
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-2">
+              <Label htmlFor="op">Nom de l'opérateur</Label>
+              <Input
+                id="op"
+                value={operator}
+                onChange={(e) => setOperator(e.target.value)}
+                placeholder="Ex: Marie"
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="name">Nom de l'inventaire</Label>
-              <Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
             </div>
           </CardContent>
         </Card>
@@ -131,9 +142,11 @@ function ImportPage() {
             </label>
             {products.length > 0 && (
               <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">{products.length}</span> produits
-                seront comptés (catégories filtrées : Boissons alcooliques, Boissons gazeuses, Lait,
-                Fruit).
+                <span className="font-medium text-foreground">
+                  {products.length}
+                </span>{" "}
+                produits seront comptés (catégories filtrées : Boissons
+                alcooliques, Boissons gazeuses, Lait, Fruit).
               </p>
             )}
           </CardContent>
@@ -143,9 +156,9 @@ function ImportPage() {
           className="w-full"
           size="lg"
           onClick={handleCreate}
-          disabled={creating || products.length === 0}
+          disabled={creating || products.length === 0 || !operator.trim()}
         >
-          {creating ? "Création…" : "Créer l'inventaire"}
+          {creating ? "Création…" : "Créer l'inventaire et commencer"}
         </Button>
       </main>
     </div>
