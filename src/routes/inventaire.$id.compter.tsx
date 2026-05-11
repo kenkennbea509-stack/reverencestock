@@ -6,10 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Check } from "lucide-react";
 import { toast } from "sonner";
-import { computeStatus, statusLabel } from "@/lib/inventory-utils";
 
 export const Route = createFileRoute("/inventaire/$id/compter")({
   component: ComptagePage,
@@ -171,44 +169,24 @@ function ComptagePage() {
           <p className="text-sm text-muted-foreground">Chargement…</p>
         ) : (
           <div className="space-y-2">
-            {items.map((i) => {
-              const status = computeStatus(i.system_qty, i.counted_qty);
-              return (
-                <Card key={i.id}>
-                  <CardContent className="flex items-center gap-3 py-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{i.product_name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Système : {i.system_qty}
-                      </p>
-                    </div>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      min={0}
-                      placeholder="—"
-                      value={i.counted_qty ?? ""}
-                      onChange={(e) => updateItem(i.id, e.target.value)}
-                      className="w-24 text-right text-base"
-                    />
-                    {status !== "non_compte" && (
-                      <Badge
-                        variant={
-                          status === "conforme"
-                            ? "default"
-                            : status === "manquant"
-                              ? "destructive"
-                              : "secondary"
-                        }
-                        className="hidden sm:inline-flex"
-                      >
-                        {statusLabel(status)}
-                      </Badge>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
+            {items.map((i) => (
+              <Card key={i.id}>
+                <CardContent className="flex items-center gap-3 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium">{i.product_name}</p>
+                  </div>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    placeholder="—"
+                    value={i.counted_qty ?? ""}
+                    onChange={(e) => updateItem(i.id, e.target.value)}
+                    className="w-24 text-right text-base"
+                  />
+                </CardContent>
+              </Card>
+            ))}
           </div>
         )}
       </main>
