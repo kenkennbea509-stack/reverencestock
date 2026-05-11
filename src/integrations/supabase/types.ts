@@ -18,34 +18,55 @@ export type Database = {
         Row: {
           completed_at: string | null
           counted_by: string | null
+          counted_by_id: string | null
           created_at: string
           created_by: string | null
           id: string
           name: string
+          owner_id: string | null
           status: Database["public"]["Enums"]["inventory_status"]
           updated_at: string
         }
         Insert: {
           completed_at?: string | null
           counted_by?: string | null
+          counted_by_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           name: string
+          owner_id?: string | null
           status?: Database["public"]["Enums"]["inventory_status"]
           updated_at?: string
         }
         Update: {
           completed_at?: string | null
           counted_by?: string | null
+          counted_by_id?: string | null
           created_at?: string
           created_by?: string | null
           id?: string
           name?: string
+          owner_id?: string | null
           status?: Database["public"]["Enums"]["inventory_status"]
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "inventories_counted_by_id_fkey"
+            columns: ["counted_by_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventories_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       inventory_items: {
         Row: {
@@ -85,14 +106,66 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string | null
+          id: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string | null
+          id: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
+      app_role: "admin" | "operateur"
       inventory_status: "en_cours" | "complet"
     }
     CompositeTypes: {
@@ -221,6 +294,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "operateur"],
       inventory_status: ["en_cours", "complet"],
     },
   },
