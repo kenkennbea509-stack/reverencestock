@@ -1,92 +1,19 @@
-# Plan — App d'inventaire PWA (FR)
+## Ajustes
 
-## Objectif
-Application web installable (PWA) en français pour faire le contrôle manuel d'inventaire bar/resto/piscine : importer un CSV, compter, comparer, générer un rapport.
+### 1. Esconder a quantidade do sistema na tela de comptage
+Em `src/routes/inventaire.$id.compter.tsx`, remover a linha `Système : {i.system_qty}` (linhas 181-183) para que cada cartão mostre apenas o nome do produto e o campo de quantidade contada. Os badges Conforme/Manquant/Surplus também serão removidos dessa tela (eles revelam indiretamente o valor do sistema). O cálculo do sistema continua salvo no banco e aparece normalmente no relatório.
 
-## Stack & infrastructure
-- TanStack Start (déjà en place) + Tailwind + shadcn/ui
-- **Lovable Cloud activé** (base partagée pour qu'un utilisateur soumette le fichier et qu'un autre continue le comptage)
-- Pas d'authentification — accès libre, on saisit un nom d'opérateur par inventaire
-- Manifest PWA simple (icône générée) pour installation iOS/Android/Desktop — pas de service worker complexe (évite les problèmes en preview)
+### 2. Código de acesso 2016
+Criar um pequeno componente `CodeDialog` (`src/components/CodeDialog.tsx`) baseado em `AlertDialog` + `Input` que pede um código de 4 dígitos. Se for `2016`, executa a ação; se errado, mostra toast "Code incorrect" e nega.
 
-## Modèle de données (Lovable Cloud)
-Table `inventories` :
-- `id`, `created_at`, `updated_at`
-- `name` (ex: "Inventaire 12 mai")
-- `created_by` (texte libre, opérateur qui importe)
-- `counted_by` (texte libre, opérateur qui compte)
-- `status` : `en_cours` | `complet`
-- `completed_at`
+Aplicar em duas situações na página inicial (`src/routes/index.tsx`):
 
-Table `inventory_items` :
-- `id`, `inventory_id` (FK)
-- `product_name`
-- `category`
-- `system_qty` (numeric — depuis colonne « In stock »)
-- `counted_qty` (numeric, nullable tant que non compté)
+- **Abrir um inventário com status `complet`** (ver relatório): o `<Link>` será substituído por um botão que abre o diálogo de código; só após código correto navega para `/inventaire/$id/rapport`. Inventários `en_cours` continuam abrindo direto.
+- **Apagar um inventário** (qualquer status): o atual `AlertDialog` "Supprimer ?" passa a exigir o código 2016 no mesmo diálogo (input do código + botões Annuler / Supprimer). A supressão só é executada se o código bater.
 
-RLS : politiques permissives (pas d'auth) — lecture/écriture publique sur ces deux tables.
+O código `2016` fica como constante no componente (atende ao pedido do usuário; sem necessidade de armazenar no backend).
 
-## Parsing CSV
-- Librairie : `papaparse`
-- Détection automatique de la colonne contenant « In stock » (insensible à la casse, peut varier)
-- Colonne catégorie : `category`
-- **Filtre catégories acceptées** : `Boissons alcooliques`, `Boissons gazeuses`, `Lait`, `Fruit` (comparaison insensible casse/accents)
-- Colonne nom : `Name`
-
-## Routes / écrans
-
-1. **`/` — Accueil**
-   - Liste des inventaires (en cours + complets) avec statut, date, opérateurs
-   - Bouton « Nouvel inventaire » → `/import`
-   - Clic sur un inventaire en cours → `/inventaire/$id/compter`
-   - Clic sur un inventaire complet → `/inventaire/$id/rapport`
-
-2. **`/import` — Création**
-   - Champ « Nom de l'opérateur »
-   - Champ « Nom de l'inventaire » (préfilled avec date)
-   - Upload CSV → preview du nombre de produits filtrés
-   - Bouton « Créer l'inventaire » → enregistre en base avec `status=en_cours`, redirige vers `/inventaire/$id/compter`
-
-3. **`/inventaire/$id/compter` — Comptage**
-   - Champ « Nom de l'opérateur de comptage » (en haut)
-   - Liste mobile-friendly de toutes les lignes :
-     - Nom produit (gros texte)
-     - Input numérique « Quantité comptée » (clavier numérique sur mobile)
-     - Badge visuel temps réel (Conforme/Manquant/Surplus) une fois saisi
-   - Barre de progression (X/Y comptés)
-   - Sauvegarde auto à chaque saisie (debounced) — permet la reprise par une autre personne
-   - Bouton « Enregistrer et terminer » (actif uniquement si toutes les quantités saisies) → marque `status=complet`, redirige vers rapport
-
-4. **`/inventaire/$id/rapport` — Rapport final**
-   - **Résumé** (cards) : Total produits, Conformes, Manquants, Surplus, Total écart (somme |diff|)
-   - **Tableau détaillé** (style sombre comme l'annexe) :
-     | Produit | Système | Compté | Différence | Statut |
-   - Filtres rapides : Tous / Manquants / Surplus / Conformes
-   - Bouton « Exporter CSV » du rapport
-
-## Règles de calcul
-- `diff = counted - system`
-- `diff == 0` → **Conforme**
-- `diff < 0` → **Manquant** (affiché `-N`)
-- `diff > 0` → **Surplus** (affiché `+N`)
-- « Valeur totale des écarts » = somme des `|diff|` (en unités, pas en monétaire — pas de prix demandé)
-
-## PWA
-- `public/manifest.webmanifest` avec `display: standalone`, nom « Inventaire »
-- Icônes 192×192 et 512×512 générées (image simple)
-- Lien manifest + meta theme-color dans `__root.tsx`
-- **Pas de service worker** (recommandation Lovable pour éviter conflits preview)
-
-## Détails techniques
-- Server functions (`createServerFn`) pour : create inventory, list inventories, get inventory, update item count, complete inventory
-- Client Supabase admin côté serveur (pas d'auth utilisateur)
-- Toasts (`sonner`) pour feedback (sauvegarde, erreurs CSV)
-- Design : thème sombre par défaut (cohérent avec l'annexe), tokens sémantiques dans `styles.css`
-
-## Livraison
-À la fin, l'utilisateur peut :
-1. Importer un CSV depuis n'importe quel appareil
-2. Reprendre un inventaire en cours depuis un autre appareil
-3. Voir le rapport final avec tableau identique à l'annexe
-4. Installer l'app sur son téléphone/tablette
+### Resumo dos arquivos
+- `src/routes/inventaire.$id.compter.tsx` — remover exibição "Système : X" e os badges de status.
+- `src/components/CodeDialog.tsx` — novo componente reutilizável de código.
+- `src/routes/index.tsx` — usar o CodeDialog para abrir relatórios completos e para confirmar exclusão.

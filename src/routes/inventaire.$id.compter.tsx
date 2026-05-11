@@ -6,10 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Check } from "lucide-react";
 import { toast } from "sonner";
-import { computeStatus, statusLabel } from "@/lib/inventory-utils";
 
 export const Route = createFileRoute("/inventaire/$id/compter")({
   component: ComptagePage,
