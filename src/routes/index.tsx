@@ -26,18 +26,6 @@ function Home() {
   const [inventories, setInventories] = useState<InventoryRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const deleteInventory = async (id: string) => {
-    await supabase.from("inventory_items").delete().eq("inventory_id", id);
-    const { error } = await supabase.from("inventories").delete().eq("id", id);
-    if (error) {
-      toast.error("Erreur lors de la suppression");
-      return;
-    }
-    toast.success("Inventaire supprimé");
-    setInventories((prev) => prev.filter((i) => i.id !== id));
-  };
-
-
   const load = async () => {
     setLoading(true);
     const { data } = await supabase
@@ -51,6 +39,17 @@ function Home() {
   useEffect(() => {
     load();
   }, []);
+
+  const deleteInventory = async (id: string) => {
+    await supabase.from("inventory_items").delete().eq("inventory_id", id);
+    const { error } = await supabase.from("inventories").delete().eq("id", id);
+    if (error) {
+      toast.error("Erreur lors de la suppression");
+      return;
+    }
+    toast.success("Inventaire supprimé");
+    setInventories((prev) => prev.filter((i) => i.id !== id));
+  };
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -92,35 +91,60 @@ function Home() {
         ) : (
           <div className="space-y-2">
             {inventories.map((inv) => {
-              const target =
-                inv.status === "complet"
-                  ? { to: "/inventaire/$id/rapport", params: { id: inv.id } }
-                  : { to: "/inventaire/$id/compter", params: { id: inv.id } };
+              const isComplete = inv.status === "complet";
+              const info = (
+                <>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium">{inv.name}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {new Date(inv.created_at).toLocaleString("fr-FR")}
+                      {inv.created_by ? ` · ${inv.created_by}` : ""}
+                    </p>
+                  </div>
+                  <Badge variant={isComplete ? "default" : "secondary"}>
+                    {isComplete ? "Complet" : "En cours"}
+                  </Badge>
+                </>
+              );
               return (
                 <Card key={inv.id} className="transition hover:border-primary/50">
                   <CardContent className="flex items-center justify-between gap-2 py-4">
-                    <Link
-                      to={target.to}
-                      params={target.params}
-                      className="flex min-w-0 flex-1 items-center justify-between gap-4"
-                    >
-                      <div className="min-w-0">
-                        <p className="truncate font-medium">{inv.name}</p>
-                        <p className="mt-0.5 text-xs text-muted-foreground">
-                          {new Date(inv.created_at).toLocaleString("fr-FR")}
-                          {inv.created_by ? ` · ${inv.created_by}` : ""}
-                        </p>
-                      </div>
-                      <Badge
-                        variant={
-                          inv.status === "complet" ? "default" : "secondary"
+                    {isComplete ? (
+                      <CodeDialog
+                        title="Accès au rapport"
+                        description={`Saisissez le code d'accès pour ouvrir le rapport « ${inv.name} ».`}
+                        confirmLabel="Ouvrir"
+                        onConfirmed={() =>
+                          navigate({
+                            to: "/inventaire/$id/rapport",
+                            params: { id: inv.id },
+                          })
                         }
+                        trigger={
+                          <button
+                            type="button"
+                            className="flex min-w-0 flex-1 items-center justify-between gap-4 text-left"
+                          >
+                            {info}
+                          </button>
+                        }
+                      />
+                    ) : (
+                      <Link
+                        to="/inventaire/$id/compter"
+                        params={{ id: inv.id }}
+                        className="flex min-w-0 flex-1 items-center justify-between gap-4"
                       >
-                        {inv.status === "complet" ? "Complet" : "En cours"}
-                      </Badge>
-                    </Link>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
+                        {info}
+                      </Link>
+                    )}
+                    <CodeDialog
+                      title="Supprimer cet inventaire ?"
+                      description={`Cette action est irréversible. Saisissez le code d'accès pour supprimer « ${inv.name} ».`}
+                      confirmLabel="Supprimer"
+                      destructive
+                      onConfirmed={() => deleteInventory(inv.id)}
+                      trigger={
                         <Button
                           variant="ghost"
                           size="icon"
@@ -129,33 +153,8 @@ function Home() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Supprimer cet inventaire ?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Cette action est irréversible. L'inventaire « {inv.name} » et tous ses produits comptés seront supprimés définitivement.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Annuler</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={async () => {
-                              await supabase.from("inventory_items").delete().eq("inventory_id", inv.id);
-                              const { error } = await supabase.from("inventories").delete().eq("id", inv.id);
-                              if (error) {
-                                toast.error("Erreur lors de la suppression");
-                                return;
-                              }
-                              toast.success("Inventaire supprimé");
-                              setInventories((prev) => prev.filter((i) => i.id !== inv.id));
-                            }}
-                          >
-                            Supprimer
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                      }
+                    />
                   </CardContent>
                 </Card>
               );
