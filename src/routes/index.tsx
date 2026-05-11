@@ -22,8 +22,21 @@ interface InventoryRow {
 }
 
 function Home() {
+  const navigate = useNavigate();
   const [inventories, setInventories] = useState<InventoryRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const deleteInventory = async (id: string) => {
+    await supabase.from("inventory_items").delete().eq("inventory_id", id);
+    const { error } = await supabase.from("inventories").delete().eq("id", id);
+    if (error) {
+      toast.error("Erreur lors de la suppression");
+      return;
+    }
+    toast.success("Inventaire supprimé");
+    setInventories((prev) => prev.filter((i) => i.id !== id));
+  };
+
 
   const load = async () => {
     setLoading(true);
