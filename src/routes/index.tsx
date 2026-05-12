@@ -87,11 +87,17 @@ function Home() {
               <p className="text-sm text-muted-foreground">
                 Aucun inventaire pour l'instant.
               </p>
-              <Link to="/import">
-                <Button>
-                  <Plus className="mr-1 h-4 w-4" /> Créer le premier inventaire
-                </Button>
-              </Link>
+              <CodeDialog
+                title="Créer un nouvel inventaire"
+                description="Saisissez le code d'accès pour créer un nouvel inventaire."
+                confirmLabel="Continuer"
+                onConfirmed={() => navigate({ to: "/import" })}
+                trigger={
+                  <Button>
+                    <Plus className="mr-1 h-4 w-4" /> Créer le premier inventaire
+                  </Button>
+                }
+              />
             </CardContent>
           </Card>
         ) : (
