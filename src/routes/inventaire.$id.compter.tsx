@@ -34,6 +34,7 @@ function ComptagePage() {
   const [inv, setInv] = useState<InventoryMeta | null>(null);
   const [items, setItems] = useState<Item[]>([]);
   const [counter, setCounter] = useState("");
+  const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const debounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -67,6 +68,11 @@ function ComptagePage() {
 
   const counted = items.filter((i) => i.counted_qty !== null).length;
   const allCounted = items.length > 0 && counted === items.length;
+  const filteredItems = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return items;
+    return items.filter((i) => i.product_name.toLowerCase().includes(q));
+  }, [items, search]);
 
   const updateItem = (itemId: string, value: string) => {
     const num = value === "" ? null : Number(value);
@@ -165,11 +171,20 @@ function ComptagePage() {
           </CardContent>
         </Card>
 
+        <Input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Rechercher un produit…"
+        />
+
         {loading ? (
           <p className="text-sm text-muted-foreground">Chargement…</p>
+        ) : filteredItems.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aucun produit trouvé.</p>
         ) : (
           <div className="space-y-2">
-            {items.map((i) => (
+            {filteredItems.map((i) => (
               <Card key={i.id}>
                 <CardContent className="flex items-center gap-3 py-3">
                   <div className="min-w-0 flex-1">
