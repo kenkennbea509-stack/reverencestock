@@ -1,19 +1,23 @@
-## Ajustes
+## Ajustes solicitados
 
-### 1. Esconder a quantidade do sistema na tela de comptage
-Em `src/routes/inventaire.$id.compter.tsx`, remover a linha `Système : {i.system_qty}` (linhas 181-183) para que cada cartão mostre apenas o nome do produto e o campo de quantidade contada. Os badges Conforme/Manquant/Surplus também serão removidos dessa tela (eles revelam indiretamente o valor do sistema). O cálculo do sistema continua salvo no banco e aparece normalmente no relatório.
+### 1. Redirecionar para a tela inicial após finalizar o inventário
+Em `src/routes/inventaire.$id.compter.tsx`, na função `handleComplete`, substituir:
+```ts
+navigate({ to: "/inventaire/$id/rapport", params: { id } });
+```
+por:
+```ts
+navigate({ to: "/" });
+```
+Assim, ao clicar em "Enregistrer et terminer", o usuário volta direto para a lista de inventários (e o rapport continua acessível pelo cartão na home, protegido pelo código 2016).
 
-### 2. Código de acesso 2016
-Criar um pequeno componente `CodeDialog` (`src/components/CodeDialog.tsx`) baseado em `AlertDialog` + `Input` que pede um código de 4 dígitos. Se for `2016`, executa a ação; se errado, mostra toast "Code incorrect" e nega.
+### 2. Tornar todos os inventários visíveis a todos os usuários
+Verificar as políticas RLS atuais nas tabelas `inventories` e `inventory_items`. As policies atuais (`inv_select_auth`, `items_select_auth`) já permitem `SELECT` para qualquer usuário `authenticated`, sem filtro por `created_by`. Portanto, todos os inventários já devem aparecer para todos os usuários conectados.
 
-Aplicar em duas situações na página inicial (`src/routes/index.tsx`):
+Vou confirmar via `supabase--read_query` que não há filtro adicional aplicado no código (a query em `src/routes/index.tsx` não filtra por `user_id`, apenas ordena por data — ok).
 
-- **Abrir um inventário com status `complet`** (ver relatório): o `<Link>` será substituído por um botão que abre o diálogo de código; só após código correto navega para `/inventaire/$id/rapport`. Inventários `en_cours` continuam abrindo direto.
-- **Apagar um inventário** (qualquer status): o atual `AlertDialog` "Supprimer ?" passa a exigir o código 2016 no mesmo diálogo (input do código + botões Annuler / Supprimer). A supressão só é executada se o código bater.
+**Conclusão:** nenhuma mudança de código/SQL necessária no item 2 — o comportamento já está correto. Se o usuário ainda não vê inventários de outros, basta confirmar que ele está autenticado. Vou apenas validar isso ao executar e, se houver algum filtro residual descoberto, removê-lo.
 
-O código `2016` fica como constante no componente (atende ao pedido do usuário; sem necessidade de armazenar no backend).
-
-### Resumo dos arquivos
-- `src/routes/inventaire.$id.compter.tsx` — remover exibição "Système : X" e os badges de status.
-- `src/components/CodeDialog.tsx` — novo componente reutilizável de código.
-- `src/routes/index.tsx` — usar o CodeDialog para abrir relatórios completos e para confirmar exclusão.
+### Resumo das alterações
+- **`src/routes/inventaire.$id.compter.tsx`**: trocar destino do `navigate` final de `/inventaire/$id/rapport` para `/`.
+- Itens 2: nenhuma mudança esperada — políticas já abertas a todos os autenticados.

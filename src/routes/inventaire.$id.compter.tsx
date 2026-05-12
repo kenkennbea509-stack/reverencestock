@@ -122,7 +122,7 @@ function ComptagePage() {
       return;
     }
     toast.success("Inventaire complet !");
-    navigate({ to: "/inventaire/$id/rapport", params: { id } });
+    navigate({ to: "/" });
   };
 
   const progress = items.length === 0 ? 0 : (counted / items.length) * 100;
