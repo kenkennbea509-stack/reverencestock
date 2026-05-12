@@ -59,11 +59,17 @@ function Home() {
             <ClipboardList className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-semibold">Inventaire</h1>
           </div>
-          <Link to="/import">
-            <Button size="sm">
-              <Plus className="mr-1 h-4 w-4" /> Nouveau
-            </Button>
-          </Link>
+          <CodeDialog
+            title="Créer un nouvel inventaire"
+            description="Saisissez le code d'accès pour créer un nouvel inventaire."
+            confirmLabel="Continuer"
+            onConfirmed={() => navigate({ to: "/import" })}
+            trigger={
+              <Button size="sm">
+                <Plus className="mr-1 h-4 w-4" /> Nouveau
+              </Button>
+            }
+          />
         </div>
       </header>
 
