@@ -1,23 +1,27 @@
-## Ajustes solicitados
+## Objetivo
 
-### 1. Redirecionar para a tela inicial após finalizar o inventário
-Em `src/routes/inventaire.$id.compter.tsx`, na função `handleComplete`, substituir:
-```ts
-navigate({ to: "/inventaire/$id/rapport", params: { id } });
-```
-por:
-```ts
-navigate({ to: "/" });
-```
-Assim, ao clicar em "Enregistrer et terminer", o usuário volta direto para a lista de inventários (e o rapport continua acessível pelo cartão na home, protegido pelo código 2016).
+Adicionar uma regra complementar no parser do CSV (`src/lib/csv-parser.ts`): se a coluna que contém "In stock" estiver **vazia** para um produto, ele é ignorado. Se tiver qualquer valor (0, negativo ou positivo), o produto é incluído normalmente.
 
-### 2. Tornar todos os inventários visíveis a todos os usuários
-Verificar as políticas RLS atuais nas tabelas `inventories` e `inventory_items`. As policies atuais (`inv_select_auth`, `items_select_auth`) já permitem `SELECT` para qualquer usuário `authenticated`, sem filtro por `created_by`. Portanto, todos os inventários já devem aparecer para todos os usuários conectados.
+As regras atuais permanecem ativas:
+- Filtro por categorias permitidas (Boissons alcooliques, Boissons gazeuses, Lait, Fruit)
+- Nome obrigatório
 
-Vou confirmar via `supabase--read_query` que não há filtro adicional aplicado no código (a query em `src/routes/index.tsx` não filtra por `user_id`, apenas ordena por data — ok).
+## Mudança
 
-**Conclusão:** nenhuma mudança de código/SQL necessária no item 2 — o comportamento já está correto. Se o usuário ainda não vê inventários de outros, basta confirmar que ele está autenticado. Vou apenas validar isso ao executar e, se houver algum filtro residual descoberto, removê-lo.
+Em `src/lib/csv-parser.ts`, dentro do loop `for (const row of result.data)`:
 
-### Resumo das alterações
-- **`src/routes/inventaire.$id.compter.tsx`**: trocar destino do `navigate` final de `/inventaire/$id/rapport` para `/`.
-- Itens 2: nenhuma mudança esperada — políticas já abertas a todos os autenticados.
+1. Ler `rawStockRaw = (row[stockColumn] ?? "").trim()` **antes** de qualquer normalização.
+2. Se `rawStockRaw === ""`, fazer `continue` (pular o produto).
+3. Caso contrário, manter a lógica atual de limpeza/`parseFloat`. Se ainda assim for `NaN` (ex.: texto inválido), usar `0` como hoje — mas valores `0`, `0.000` e negativos passam normalmente.
+
+Ordem das verificações no loop:
+1. Categoria permitida (existente)
+2. Nome não vazio (existente)
+3. **Novo:** valor de "In stock" não vazio
+4. Push do produto
+
+## Verificação
+
+- Confirmar com o CSV enviado (`export_items_3.csv`) que linhas como `banane-au-foie-100` (In stock vazio, mas categoria "Plats" — já filtrada) e produtos de bebidas com `0.000` continuam com o comportamento esperado.
+- Produtos das categorias permitidas com In stock vazio passam a ser ignorados; com `0.000` ou negativos continuam incluídos.
+- Nenhuma alteração em `src/routes/import.tsx`, no fluxo de criação, na contagem ou nos relatórios — a regra fica isolada no parser.
