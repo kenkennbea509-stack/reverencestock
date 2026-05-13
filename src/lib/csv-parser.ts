@@ -74,10 +74,9 @@ export async function parseInventoryCsv(file: File): Promise<ParseResult> {
           if (!ALLOWED_CATEGORIES.includes(normalize(cat))) continue;
           const name = (row[nameColumn] ?? "").trim();
           if (!name) continue;
-          const rawStock = (row[stockColumn] ?? "0")
-            .toString()
-            .replace(",", ".")
-            .replace(/[^\d.\-]/g, "");
+          const rawStockRaw = (row[stockColumn] ?? "").toString().trim();
+          if (rawStockRaw === "") continue;
+          const rawStock = rawStockRaw.replace(",", ".").replace(/[^\d.\-]/g, "");
           const qty = parseFloat(rawStock);
           products.push({
             name,
