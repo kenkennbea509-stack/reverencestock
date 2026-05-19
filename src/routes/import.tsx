@@ -145,8 +145,7 @@ function ImportPage() {
                 <span className="font-medium text-foreground">
                   {products.length}
                 </span>{" "}
-                produits seront comptés (catégories filtrées : Boissons
-                alcooliques, Boissons gazeuses, Lait, Fruit).
+                produits seront comptés (Track stock = Y).
               </p>
             )}
           </CardContent>
