@@ -33,7 +33,7 @@ function ImportPage() {
       setFileName(file.name);
       if (result.products.length === 0) {
         toast.warning(
-          "Aucun produit dans les catégories acceptées (Boissons alcooliques, Boissons gazeuses, Lait, Fruit).",
+          "Aucun produit avec Track stock = Y trouvé dans le fichier.",
         );
       } else {
         toast.success(`${result.products.length} produits trouvés.`);
