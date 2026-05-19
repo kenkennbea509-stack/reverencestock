@@ -1,27 +1,24 @@
-## Objetivo
+## Mudança no filtro do CSV
 
-Adicionar uma regra complementar no parser do CSV (`src/lib/csv-parser.ts`): se a coluna que contém "In stock" estiver **vazia** para um produto, ele é ignorado. Se tiver qualquer valor (0, negativo ou positivo), o produto é incluído normalmente.
+Em `src/lib/csv-parser.ts`, substituir as regras atuais (categorias permitidas + In stock não vazio) por uma única regra:
 
-As regras atuais permanecem ativas:
-- Filtro por categorias permitidas (Boissons alcooliques, Boissons gazeuses, Lait, Fruit)
-- Nome obrigatório
+- Localizar a coluna cujo cabeçalho normalizado seja `track stock`.
+- Para cada linha, incluir o produto **apenas se** `row["Track stock"]` (case-insensitive, trim) for `"Y"`. Qualquer outro valor (`N`, vazio, etc.) → ignorar.
+- Continuar exigindo `Name` não vazio.
+- A coluna `In stock` permanece sendo lida apenas para preencher `systemQty` (sem filtro). Se vazia ou inválida → `0`.
+- Se a coluna `Track stock` não existir no CSV → erro claro ("Colonne « Track stock » introuvable").
 
-## Mudança
+Categorias deixam de filtrar — atualizar também a mensagem em `src/routes/import.tsx` que hoje diz "catégories filtrées : Boissons alcooliques…" para algo como "Produits avec Track stock = Y".
 
-Em `src/lib/csv-parser.ts`, dentro do loop `for (const row of result.data)`:
+## Limite de 99 produtos
 
-1. Ler `rawStockRaw = (row[stockColumn] ?? "").trim()` **antes** de qualquer normalização.
-2. Se `rawStockRaw === ""`, fazer `continue` (pular o produto).
-3. Caso contrário, manter a lógica atual de limpeza/`parseFloat`. Se ainda assim for `NaN` (ex.: texto inválido), usar `0` como hoje — mas valores `0`, `0.000` e negativos passam normalmente.
+Verifiquei o código: não existe nenhum cap de 99 nem `.limit()` / `.slice()` nos parsers, inserts ou leituras. O Supabase tem um padrão de 1000 linhas por `select`, bem acima de 99.
 
-Ordem das verificações no loop:
-1. Categoria permitida (existente)
-2. Nome não vazio (existente)
-3. **Novo:** valor de "In stock" não vazio
-4. Push do produto
+O comportamento de 99 que o usuário observou é quase certamente consequência do filtro atual (categorias restritas + In stock vazio). Removendo esses filtros e mantendo apenas `Track stock = Y`, todos os produtos elegíveis da planilha serão importados.
+
+Nenhuma alteração extra de paginação é necessária neste momento. Se após o teste com a planilha real ainda houver corte, investigamos os `select` de `inventory_items` e adicionamos `.range(0, N)` se preciso.
 
 ## Verificação
 
-- Confirmar com o CSV enviado (`export_items_3.csv`) que linhas como `banane-au-foie-100` (In stock vazio, mas categoria "Plats" — já filtrada) e produtos de bebidas com `0.000` continuam com o comportamento esperado.
-- Produtos das categorias permitidas com In stock vazio passam a ser ignorados; com `0.000` ou negativos continuam incluídos.
-- Nenhuma alteração em `src/routes/import.tsx`, no fluxo de criação, na contagem ou nos relatórios — a regra fica isolada no parser.
+- Rodar o parser contra `export_items_3-2.csv` e contar quantas linhas têm `Track stock = Y`; conferir que o resultado bate.
+- Criar um inventário de teste no preview e verificar que todos esses produtos aparecem na tela de contagem (sem corte em 99).

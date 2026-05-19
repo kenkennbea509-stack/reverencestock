@@ -1,12 +1,5 @@
 import Papa from "papaparse";
 
-const ALLOWED_CATEGORIES = [
-  "boissons alcooliques",
-  "boissons gazeuses",
-  "lait",
-  "fruit",
-];
-
 function normalize(s: string): string {
   return s
     .normalize("NFD")
@@ -48,11 +41,14 @@ export async function parseInventoryCsv(file: File): Promise<ParseResult> {
         const categoryColumn = headers.find(
           (h) => normalize(h) === "category",
         );
+        const trackStockColumn = headers.find(
+          (h) => normalize(h) === "track stock",
+        );
 
-        if (!stockColumn) {
+        if (!trackStockColumn) {
           reject(
             new Error(
-              "Colonne « In stock » introuvable dans le fichier CSV.",
+              "Colonne « Track stock » introuvable dans le fichier CSV.",
             ),
           );
           return;
@@ -61,34 +57,30 @@ export async function parseInventoryCsv(file: File): Promise<ParseResult> {
           reject(new Error("Colonne « Name » introuvable dans le fichier CSV."));
           return;
         }
-        if (!categoryColumn) {
-          reject(
-            new Error("Colonne « category » introuvable dans le fichier CSV."),
-          );
-          return;
-        }
 
         const products: ParsedProduct[] = [];
         for (const row of result.data) {
-          const cat = row[categoryColumn] ?? "";
-          if (!ALLOWED_CATEGORIES.includes(normalize(cat))) continue;
+          const track = (row[trackStockColumn] ?? "").toString().trim().toLowerCase();
+          if (track !== "y") continue;
           const name = (row[nameColumn] ?? "").trim();
           if (!name) continue;
-          const rawStockRaw = (row[stockColumn] ?? "").toString().trim();
-          if (rawStockRaw === "") continue;
-          const rawStock = rawStockRaw.replace(",", ".").replace(/[^\d.\-]/g, "");
-          const qty = parseFloat(rawStock);
-          products.push({
-            name,
-            category: cat,
-            systemQty: isNaN(qty) ? 0 : qty,
-          });
+          const cat = categoryColumn ? (row[categoryColumn] ?? "") : "";
+          let qty = 0;
+          if (stockColumn) {
+            const rawStockRaw = (row[stockColumn] ?? "").toString().trim();
+            if (rawStockRaw !== "") {
+              const rawStock = rawStockRaw.replace(",", ".").replace(/[^\d.\-]/g, "");
+              const parsed = parseFloat(rawStock);
+              qty = isNaN(parsed) ? 0 : parsed;
+            }
+          }
+          products.push({ name, category: cat, systemQty: qty });
         }
 
         resolve({
           products,
           totalRows: result.data.length,
-          stockColumn,
+          stockColumn: stockColumn ?? "",
           errors,
         });
       },
